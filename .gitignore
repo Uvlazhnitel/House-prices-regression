@@ -5,3 +5,12 @@ models/
 data/interim/
 data/processed/
 *.pyc
+
+data/**
+!data/.gitkeep
+!data/*.sample.*
+!data/*_sample.*
+!data/sample/*
+!data/*.csv
+!data/*.tsv
+!data/*.json
