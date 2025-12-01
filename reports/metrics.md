@@ -8,6 +8,7 @@
 - Larger errors (especially for expensive items) are penalized more heavily, which is important for the business.
 
 ### Model Comparison (5-fold CV, train set):
+- Metrics are reported as mean values over 5-fold cross-validation on the training set.
 
 - **DummyRegressor (mean)**:
   - RMSE: 77077.66
