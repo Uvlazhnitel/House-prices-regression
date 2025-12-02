@@ -1,5 +1,5 @@
 
-## Baseline Metrics 
+## Baseline Metrics
 
 ### Main Metric: **RMSE** (Root Mean Squared Error)
 
@@ -25,5 +25,5 @@
 
 ### Conclusion:
 - All linear models significantly outperform the dummy model in terms of RMSE and MAE.
-- Ridge and Lasso are currently used with default parameters; tuning the `alpha` parameter will be performed in a separate session.
+- Ridge is tested with alpha=1.0 and Lasso with alpha=0.1; further tuning of the `alpha` parameter will be performed in a separate session.
 - Among the tested models, **Ridge (alpha=1.0)** shows the best performance with the lowest RMSE and MAE, making it the most promising candidate for further optimization.
