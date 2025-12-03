@@ -27,3 +27,22 @@
 - All linear models significantly outperform the dummy model in terms of RMSE and MAE.
 - Ridge is tested with alpha=1.0 and Lasso with alpha=0.1; further tuning of the `alpha` parameter will be performed in a separate session.
 - Among the tested models, **Ridge (alpha=1.0)** shows the best performance with the lowest RMSE and MAE, making it the most promising candidate for further optimization.
+
+## Ridge & Lasso regularization
+
+Main metric: RMSE (neg_root_mean_squared_error in CV).
+
+Ridge:
+- Alpha values tested: [0.001, 0.01, 0.1, 1, 10, 100, 1000]
+- Best alpha: 10.0
+- CV RMSE (mean ± std): 31556 ± 7217
+
+Lasso:
+- Alpha values tested: [0.001, 0.01, 0.1, 1, 10, 100, 1000]
+- Best alpha: 100.0
+- CV RMSE (mean ± std): 31597 ± 7633
+
+Conclusion:
+- Regularization significantly improved RMSE compared to very small alpha values (~36k → ~31.6k).
+- Best Ridge and best Lasso perform almost identically on CV.
+- For the next comparisons, we will use Ridge(alpha=10.0) and Lasso(alpha=100.0) as tuned linear baselines.
