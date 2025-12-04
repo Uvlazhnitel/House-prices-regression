@@ -46,3 +46,26 @@ Conclusion:
 - Regularization significantly improved RMSE compared to very small alpha values (~36k → ~31.6k).
 - Best Ridge and best Lasso perform almost identically on CV.
 - For the next comparisons, we will use Ridge(alpha=10.0) and Lasso(alpha=100.0) as tuned linear baselines.
+
+## RandomForestRegressor — feature importances (top 10)
+
+Top features by importance:
+
+1. OverallQual (0.55) — overall material and finish quality.
+2. GrLivArea (0.12) — above ground living area.
+3. TotalBsmtSF (0.03) — total basement area.
+4. 2ndFlrSF (0.03) — second floor area.
+5. BsmtFinSF1 (0.028) — finished basement area.
+6. 1stFlrSF (0.027) — first floor area.
+7. LotArea (0.018) — lot size.
+8. GarageArea (0.016) — garage area.
+9. GarageCars (0.014) — car capacity of the garage.
+10. YearBuilt (0.012) — year the house was built.
+
+Interpretation:
+
+- OverallQual is by far the most important feature: model heavily relies on the overall quality rating to explain house prices.
+- Different types of area-related features (living area, basement, floors, lot, garage) collectively form the second most important group of predictors.
+- YearBuilt also contributes: newer houses tend to be more expensive on average.
+
+This ranking is consistent with domain intuition: higher quality, more living space, larger lot/garage and newer construction all drive higher prices.
