@@ -69,3 +69,35 @@ Interpretation:
 - YearBuilt also contributes: newer houses tend to be more expensive on average.
 
 This ranking is consistent with domain intuition: higher quality, more living space, larger lot/garage and newer construction all drive higher prices.
+
+## Model comparison (cross-validation on train)
+
+**Setup**
+
+- Metric: RMSE (lower is better), secondary metric: MAE.
+- Evaluation: 5-fold cross-validation on the training set using the same preprocessing and CV splits for all models.
+
+**Results**
+
+| Model                           | RMSE (mean ± std)      | MAE (mean ± std)       |
+|---------------------------------|------------------------|------------------------|
+| DummyRegressor (mean)           | 77,160 ± 3,673         | 56,318 ± 2,612         |
+| LinearRegression                | 36,397 ± 7,545         | 19,622 ± 806           |
+| Ridge (alpha = 1.0)             | 32,814 ± 7,333         | 18,676 ± 1,117         |
+| Lasso (alpha = 0.1)             | 36,039 ± 7,401         | 19,445 ± 899           |
+| Ridge (alpha = 10.0, tuned)     | 31,556 ± 7,217         | 18,001 ± 581           |
+| Lasso (alpha = 100.0, tuned)    | 31,597 ± 7,633         | 20,613 ± 858           |
+| RandomForestRegressor           | 30,188 ± 4,925         | 18,172 ± 1,124         |
+| HistGradientBoostingRegressor   | **28,749 ± 4,849**     | **17,058 ± 995**       |
+
+**Summary**
+
+- The **DummyRegressor** baseline performs very poorly (RMSE ≈ 77k), as expected.
+- Switching to **LinearRegression** dramatically improves performance (RMSE drops to ~36k).
+- Adding **L2/L1 regularization** helps:
+  - **Ridge (alpha = 10.0)** is the best linear model with RMSE ≈ 31.6k.
+  - **Lasso (alpha = 100.0)** achieves a similar RMSE but worse MAE, so Ridge is preferred among linear models.
+- **Tree-based models** further improve performance:
+  - **RandomForestRegressor** reduces RMSE to ~30.2k.
+  - **HistGradientBoostingRegressor** is currently the best model with RMSE ≈ 28.7k and MAE ≈ 17.1k.
+- **Current leader:** HistGradientBoostingRegressor (baseline hyperparameters). This model will be treated as the main candidate for further tuning and analysis.
