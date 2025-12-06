@@ -101,3 +101,22 @@ This ranking is consistent with domain intuition: higher quality, more living sp
   - **RandomForestRegressor** reduces RMSE to ~30.2k.
   - **HistGradientBoostingRegressor** is currently the best model with RMSE ≈ 28.7k and MAE ≈ 17.1k.
 - **Current leader:** HistGradientBoostingRegressor (baseline hyperparameters). This model will be treated as the main candidate for further tuning and analysis.
+
+## Target transformation (raw vs log1p)
+
+Model: HistGradientBoostingRegressor (baseline config)
+
+CV setup: 5-fold KFold, shuffle=True, random_state=42  
+Main metric: RMSE (neg_root_mean_squared_error in sklearn, converted to positive values)
+
+Results (evaluated in original price space):
+
+- HGB + raw target (SalePrice):
+  - RMSE: 28748.83 ± 4848.51
+
+- HGB + log1p target (y_log = log1p(SalePrice), predictions mapped back via expm1):
+  - RMSE: 28161.12 ± 4554.00
+
+Conclusion:
+- log1p target reduced CV RMSE by ~587 (~2%) and slightly decreased the std across folds.
+- Final choice: **use log1p(SalePrice) as the training target** for HGB (and future boosted models), with metrics always evaluated in the original price space.
