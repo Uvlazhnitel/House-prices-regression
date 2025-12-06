@@ -120,3 +120,47 @@ Results (evaluated in original price space):
 Conclusion:
 - log1p target reduced CV RMSE by ~587 (~2%) and slightly decreased the std across folds.
 - Final choice: **use log1p(SalePrice) as the training target** for HGB (and future boosted models), with metrics always evaluated in the original price space.
+
+## Hyperparameter tuning for HGB (log1p target)
+
+**Model**
+
+- `TransformedTargetRegressor(func=log1p, inverse_func=expm1)`
+- Base regressor: `Pipeline(preprocessor → HistGradientBoostingRegressor)`
+
+Target:
+
+- The model is trained on `log1p(SalePrice)` and predictions are transformed back with `expm1`, so all metrics below are in the original price scale.
+
+**Search setup**
+
+- Method: `RandomizedSearchCV`
+- Estimator: `log_target_model` (log1p wrapper around HGB pipeline)
+- CV: 5-fold `KFold(shuffle=True, random_state=RANDOM_STATE)`
+- Scoring:
+  - primary: `neg_root_mean_squared_error` (used for `refit`)
+  - secondary: `neg_mean_absolute_error`
+- Number of sampled configurations: `n_iter = 40`
+- Parameters tuned (HGB inside the pipeline):
+
+  - `learning_rate`
+  - `max_leaf_nodes`
+  - `min_samples_leaf`
+  - `max_iter`
+
+**Best hyperparameters**
+
+- `learning_rate = 0.1254335218612733`
+- `max_leaf_nodes = 23`
+- `min_samples_leaf = 11`
+- `max_iter = 120`
+
+**CV performance (5-fold, original price scale)**
+
+- RMSE (mean ± std): **27 743 ± 4 617**
+- MAE  (mean ± std): **17 094 ± 1 378**
+
+**Conclusion**
+
+- HistGradientBoostingRegressor with a log1p-transformed target and the hyperparameters above is selected as the tuned leader model for the regression task.
+- This configuration will be used as the main model for further evaluation on the test set and for packaging (`predict.py`, model artifact in `models/`).
