@@ -164,3 +164,31 @@ Target:
 
 - HistGradientBoostingRegressor with a log1p-transformed target and the hyperparameters above is selected as the tuned leader model for the regression task.
 - This configuration will be used as the main model for further evaluation on the test set and for packaging (`predict.py`, model artifact in `models/`).
+
+
+## Session 26 — Learning curve (leader model)
+
+Model: **HistGradientBoostingRegressor (tuned), target = log1p(SalePrice)**  
+Figure: `reports/figures/learning_curve.png`  
+
+Observations:
+
+- For small training set sizes (≈93–261 samples):  
+  - train RMSE drops from ≈22.5k to ≈13.7k,  
+  - validation RMSE drops from ≈40.7k to ≈33.6k,  
+  → strong overfitting on small data (the model fits train very well but generalizes poorly).
+
+- As the training size increases up to 934 samples:  
+  - train RMSE stays in the ≈12–14k range,  
+  - validation RMSE steadily decreases: ≈31.4k → 30.5k → 30.4k → **28.0k**.
+
+- At the maximum training size:  
+  - **train RMSE ≈ 12.8k**,  
+  - **validation RMSE ≈ 28.0k**,  
+  → a large and persistent gap (~15k) between train and validation errors, indicating substantial overfitting (high variance).
+
+Conclusion:
+
+- The current model is **overfitting**: it achieves very low error on the training data but significantly worse performance on validation data.  
+- The validation curve is still improving with more data, but the gains are gradually decreasing.  
+- Further improvements should focus on **stronger regularization** (e.g., limiting tree depth, increasing `min_samples_leaf`, adding `l2_regularization`) and **feature engineering**, rather than increasing model complexity.
