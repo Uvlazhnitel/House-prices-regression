@@ -164,3 +164,31 @@ Target:
 
 - HistGradientBoostingRegressor with a log1p-transformed target and the hyperparameters above is selected as the tuned leader model for the regression task.
 - This configuration will be used as the main model for further evaluation on the test set and for packaging (`predict.py`, model artifact in `models/`).
+
+## Learning curve (leader model)
+
+Model: **HistGradientBoostingRegressor (tuned), target = log1p(SalePrice)**  
+Figure: `reports/figures/learning_curve.png`  
+
+Learning curve data (5-fold CV, RMSE on original target scale):
+
+| Train size | Train RMSE (mean) | Validation RMSE (mean) |
+|-----------:|------------------:|------------------------:|
+|        93  | 22,493.18         | 40,735.50               |
+|       261  | 13,682.07         | 33,599.04               |
+|       429  | 14,130.36         | 31,433.37               |
+|       597  | 11,966.90         | 30,543.44               |
+|       765  | 14,323.08         | 30,400.23               |
+|       934  | 12,781.68         | 27,998.61               |
+
+Observations:
+
+- For small training sizes (93–261 samples), the model achieves very low training error (≈22.5k → 13.7k RMSE) but much higher validation error (≈40.7k → 33.6k RMSE), indicating strong overfitting on small data.
+- As the training size increases from 429 to 934 samples, validation RMSE steadily improves from ≈31.4k down to ≈28.0k, while training RMSE remains in the ≈12–14k range.
+- At the largest training size (934 samples), there is still a large gap between train and validation errors (train ≈12.8k vs. val ≈28.0k), which points to substantial overfitting (high variance).
+- The validation curve is still slowly decreasing with more data, so additional data would likely help, but the marginal gains are already diminishing.
+
+Conclusion:
+
+- The current leader model is **overfitting**: it fits the training data very well but generalizes noticeably worse on validation folds.  
+- Further improvements should focus on **stronger regularization** (e.g., limiting tree depth, increasing `min_samples_leaf`, adding `l2_regularization`) and/or **better feature engineering**, rather than increasing model complexity.
