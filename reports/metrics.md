@@ -200,7 +200,7 @@ Conclusion:
 I computed permutation importance for the tuned leader model on the validation data.  
 The numbers below show the **increase in RMSE (in the original target units)** when each feature is randomly permuted, averaged over several repetitions (higher = more important):
 
-Top features by permutation importance:
+Top features by permutation importance
 
 - **OverallQual**: +34,021 (±1,079)
 - **GrLivArea**: +25,896 (±693)
@@ -215,7 +215,7 @@ Top features by permutation importance:
 
 Interpretation:
 
-- **OverallQual** and **GrLivArea** are by far the most critical predictors: shuffling either of them increases RMSE by ~26–34k, which is a very large degradation compared to other features.
+- **OverallQual** and **GrLivArea** are by far the most critical predictors: shuffling either of them increases RMSE by ~26k–34k, which is a very large degradation compared to other features.
 - **GarageCars**, basement-related square footage, and location (**Neighborhood**) form the second tier of important predictors.
 - Many remaining features have relatively small importance values; permuting them only slightly worsens RMSE, which suggests that the model can compensate for them using other correlated variables.
 
@@ -287,4 +287,4 @@ This is a reasonable pattern: going from no garage to a 2–3 car garage is a st
 - For all three features, the model captures **non-linear effects and diminishing returns**:
   - quality and area strongly increase price up to a point, then the effect saturates;
   - garage capacity is most beneficial up to 2–3 spaces, with little gain beyond that.
-- The learned relationships are consistent with domain knowledge, which increases confidence that the model is not relying on spurious artefacts but on meaningful housing characteristics.
+- The learned relationships are consistent with domain knowledge, which increases confidence that the model is not relying on spurious artifacts but on meaningful housing characteristics.
