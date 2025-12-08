@@ -192,3 +192,99 @@ Conclusion:
 
 - The current leader model is **overfitting**: it fits the training data very well but generalizes noticeably worse on validation folds.  
 - Further improvements should focus on **stronger regularization** (e.g., limiting tree depth, increasing `min_samples_leaf`, adding `l2_regularization`) and/or **better feature engineering**, rather than increasing model complexity.
+
+## Model interpretation (PDP & permutation importance)
+
+### 1. Permutation importance
+
+I computed permutation importance for the tuned leader model on the validation data.  
+The numbers below show the **increase in RMSE (in the original target units)** when each feature is randomly permuted, averaged over several repetitions (higher = more important):
+
+Top features by permutation importance:
+
+- **OverallQual**: +34,021 (±1,079)
+- **GrLivArea**: +25,896 (±693)
+- **GarageCars**: +7,199 (±380)
+- **BsmtFinSF1**: +6,868 (±329)
+- **TotalBsmtSF**: +6,614 (±420)
+- **Neighborhood**: +5,890 (±887)
+- **LotArea**: +4,383 (±256)
+- **1stFlrSF**: +3,770 (±194)
+- **YearBuilt**: +3,468 (±187)
+- **YearRemodAdd**: +2,789 (±255)
+
+Interpretation:
+
+- **OverallQual** and **GrLivArea** are by far the most critical predictors: shuffling either of them increases RMSE by ~26–34k, which is a very large degradation compared to other features.
+- **GarageCars**, basement-related square footage, and location (**Neighborhood**) form the second tier of important predictors.
+- Many remaining features have relatively small importance values; permuting them only slightly worsens RMSE, which suggests that the model can compensate for them using other correlated variables.
+
+These results are consistent with domain intuition: overall quality, living area, parking capacity, basement size and neighborhood should strongly affect house prices.
+
+---
+
+### 2. PDP — OverallQual
+
+File: `reports/figures/pdp_OverallQual.png`
+
+The PDP for **OverallQual** (overall material and finish quality, 1–10) shows a clear, strongly **increasing** relationship:
+
+- For low quality levels (≈1–3) the predicted price is in a relatively low band and changes very little.
+- From **3 to 6** the predicted price starts to increase more noticeably.
+- There is a **sharp jump** in predicted price between **6 and 8**: moving from “average” to “high” quality has a large positive effect.
+- Between **8 and 10** the curve continues to increase but flattens slightly, indicating **diminishing returns** at the highest quality levels.
+
+Interpretation:
+
+> The model considers overall quality to be a major driver of price.  
+> Upgrading a house from low/average quality to high quality has a strong positive impact on the predicted sale price, while further improvements at the very top end still help but with smaller marginal gains.
+
+This matches expectations: going from poor to good quality matters more than fine-tuning already premium houses.
+
+---
+
+### 3. PDP — GrLivArea
+
+File: `reports/figures/pdp_GrLivArea.png`
+
+The PDP for **GrLivArea** (above-ground living area) shows an almost **monotonic increasing** relationship:
+
+- In the lower range (≈850–1,300 sq ft) the predicted price grows steadily as living area increases.
+- Around **1,400–1,600 sq ft** there is a steeper region, where additional square footage gives a more visible jump in predicted price.
+- From roughly **1,600 up to 2,400+ sq ft**, the curve keeps increasing but the slope is a bit smoother — the model still rewards extra space, but each additional square foot contributes slightly less than in the mid-range.
+
+Interpretation:
+
+> The model sees “more living area” as consistently increasing the predicted price, with some indication of **diminishing returns** at larger sizes.  
+> Increasing a very small house to a medium-sized one has a stronger effect than adding the same amount of space to an already large house.
+
+Again this is intuitive: going from cramped to comfortable has bigger impact than expanding an already spacious house.
+
+---
+
+### 4. PDP — GarageCars
+
+File: `reports/figures/pdp_GarageCars.png`
+
+The PDP for **GarageCars** (number of cars the garage can hold) has a **stepwise** shape:
+
+- Moving from **0 → 1 → 2 cars** increases the predicted price gradually.
+- The jump from **2 to 3 cars** adds another clear increase.
+- Between **3 and 4 cars** the curve is almost flat, suggesting that beyond three parking spots, the model does **not** expect a substantial additional gain in price.
+
+Interpretation:
+
+> The model treats having a garage, and especially moving from 1–2 to **3 car spaces**, as valuable.  
+> However, once a house already has a 3-car garage, adding even more capacity yields little additional benefit in the prediction.
+
+This is a reasonable pattern: going from no garage to a 2–3 car garage is a strong positive signal; more than that is niche and less impactful.
+
+---
+
+### 5. Overall conclusion
+
+- Permutation importance and PDPs agree that **overall quality**, **living area**, and **garage capacity** are key drivers for the model’s price predictions.
+- For all three features, the model captures **non-linear effects and diminishing returns**:
+  - quality and area strongly increase price up to a point, then the effect saturates;
+  - garage capacity is most beneficial up to 2–3 spaces, with little gain beyond that.
+- The learned relationships are consistent with domain knowledge, which increases confidence that the model is not relying on spurious artefacts but on meaningful housing characteristics.
