@@ -288,3 +288,207 @@ This is a reasonable pattern: going from no garage to a 2–3 car garage is a st
   - quality and area strongly increase price up to a point, then the effect saturates;
   - garage capacity is most beneficial up to 2–3 spaces, with little gain beyond that.
 - The learned relationships are consistent with domain knowledge, which increases confidence that the model is not relying on spurious artifacts but on meaningful housing characteristics.
+
+## Error analysis & feature hypotheses
+
+### 1. Experimental setup
+
+* Model: current **leader pipeline** (`log_target_model`) with preprocessing and regressor, trained on the fixed train split.
+* To get honest error estimates on the training data, I computed **OOF (out-of-fold) predictions** using `cross_val_predict`:
+
+  * same `cv` object as in the main evaluation (same folds, same `random_state`),
+  * for each training sample, the prediction comes from a model that **did not see this sample** during training.
+* Based on OOF predictions I computed:
+
+  * `residual = y_true − y_pred`,
+  * `abs_error = |y_true − y_pred|`,
+  * `relative_error = residual / y_true`.
+* Saved artifacts:
+
+  * per-sample error metrics only: `reports/error_analysis_df.csv`,
+  * full table with features + errors (via concatenation with `X_train`): `reports/error_analysis_with_features.csv`.
+
+---
+
+### 2. Summary statistics of errors
+
+On the training set (1168 samples):
+
+**Target & predictions:**
+
+* mean `y_true` ≈ **181,441**, mean `y_pred` ≈ **179,561** → global level of predictions is very close to the true average price.
+* median `y_true` = **165,000**, median `y_pred` ≈ **164,340** → medians are also very close.
+
+**Residuals (`residual = y_true − y_pred`):**
+
+* mean residual ≈ **+1,880** → on average, the model **slightly underestimates** prices (true price is ~1.9k higher than predicted).
+* std residual ≈ **28,082**.
+* quantiles:
+
+  * 25% ≈ **−10,258**
+  * 50% ≈ **+649**
+  * 75% ≈ **+12,237**
+    → for **50% of houses**, residual lies roughly in **[−10k; +12k]**.
+
+**Absolute error (`abs_error`):**
+
+* mean abs_error ≈ **17,096**,
+* median abs_error ≈ **10,964**,
+* 75% quantile ≈ **20,852**.
+
+Given the median price ≈ 165k:
+
+* for **50% of houses**, absolute error ≈ **≤ 11k** (~6–7% of median price),
+* for **75% of houses**, absolute error ≈ **≤ 21k**.
+
+**Tails:**
+
+* min residual ≈ **−215,733**, max residual ≈ **+284,694**,
+* max abs_error ≈ **284,694**.
+
+→ There is a **small number of extreme outliers** with errors of order 200–280k, which heavily influence RMSE.
+
+**Conclusion:**
+For the majority of samples the model error is reasonable (tens of thousands), with almost no global bias. RMSE is strongly driven by a few problematic houses with very large errors.
+
+---
+
+### 3. Residual distribution (histogram)
+
+* The residual histogram is **centered near zero**:
+
+  * main mass around 0,
+  * approximate symmetry.
+* Most residuals lie in a relatively narrow band near 0; only a few points form long tails towards large positive/negative values (|residual| > 100k).
+
+**Conclusion:**
+The model does **not** exhibit strong systematic bias in one direction. Most predictions are close to the true values; a few extreme outliers create long tails in the residual distribution.
+
+---
+
+### 4. Residuals vs predictions / true values
+
+#### 4.1. `y_true vs residual`
+
+* For true prices up to ~**300k**, residuals are scattered symmetrically around zero:
+
+  * both under- and over-estimations present,
+  * no clear trend, moderate spread.
+* For **expensive houses** (true price ≳ ~350k):
+
+  * many residuals are **positive** (`y_true > y_pred`) → strong **underestimation**,
+  * error magnitude grows significantly.
+
+**Conclusion:**
+In the **main price segment** (~70k–300k) the model is roughly unbiased. In the **upper price segment**, the model tends to **underestimate** expensive houses and makes much larger errors there.
+
+#### 4.2. `y_pred vs residual`
+
+* For predicted prices up to ~**300k**:
+
+  * cloud of points around residual = 0,
+  * no obvious trend, residuals look like noise.
+* For higher predicted prices (~**> 300–350k**):
+
+  * vertical spread of residuals increases strongly,
+  * residuals reach up to ±200–300k.
+
+**Conclusion:**
+For “normal” predictions (≤ 300k) the model behaves stably and without strong systematic drift. In the **high predicted price segment**, error variance grows markedly (**heteroscedasticity**): the model is much less reliable there and can both heavily over- and under-estimate individual houses.
+
+---
+
+### 5. Top-N errors (sorted by `abs_error`)
+
+I concatenated `X_train` with error metrics to obtain `analysis_df`, then sorted rows by `abs_error` in descending order and examined the **top 10** rows. For each, I inspected:
+
+* `y_true`, `y_pred`, `abs_error`, `residual`,
+* key features: `GrLivArea`, `OverallQual`, `GarageCars`, `BsmtFinSF1`, `TotalBsmtSF`,
+* and context features: `Neighborhood`, `LotArea`, `YearBuilt`.
+
+**Observations:**
+
+1. The top-10 most erroneous cases include both **very expensive** and **relatively cheap** houses:
+
+   * expensive, strongly **underestimated**:
+
+     * ~392k, 375k, 466.5k, 538k, 582.9k, 745k,
+   * cheaper, strongly **overestimated**:
+
+     * ~147k, 160k, 184.8k, 235k.
+
+2. **Overestimated cheap houses**:
+
+   * have **large living areas** (e.g. 1262–2198 sqft),
+   * **above-average quality** (OverallQual 6–8),
+   * normal or large garages and basements.
+   * Example: a house at 147k with GrLivArea≈2198 and OverallQual=8 is predicted around 312k.
+     → According to structural features, these homes look like “expensive” ones, but the transaction price is much lower. The model **overprices** such houses.
+
+3. **Underestimated expensive houses**:
+
+   * do **not** always have extreme size or quality:
+
+     * GrLivArea often ~1362–2090 (even 1077 in one case),
+     * OverallQual ranges between 5 and 7.
+   * Example: a 745k house in `CollgCr` (1710 sqft, OverallQual=7, built in 2003) is predicted ~460k.
+     → Based on basic numerical features, these homes look more like “upper-middle” segment, but the actual price is much higher. The model **underestimates** them.
+
+4. Neighborhoods in top-10 are varied:
+
+   * `CollgCr`, `Veenker`, `NoRidge`, `Somerst`, `Crawfor`, `NWAmes`, `OldTown`, `BrkSide`, `Mitchel`, etc.
+   * There is no single dominating neighborhood in this small sample, but several **typically more expensive** neighborhoods appear (`NoRidge`, `Somerst`, `Crawfor`, some `CollgCr`/`Veenker` cases).
+
+**Qualitative conclusion on top errors:**
+
+> * The model tends to **pull prices towards a “middle/upper-middle” band**:
+>
+>   * truly expensive houses with moderate size/quality are **underestimated** (predictions too low),
+>   * relatively cheap but large, high-quality houses are **overestimated** (predictions too high).
+> * This suggests the model:
+>
+>   1. heavily relies on structural features (size, quality, garage, basement),
+>   2. **does not fully account for neighborhood / location effects and other context factors**,
+>      which leads to:
+>
+>      * price underestimation in premium segments,
+>      * and overestimation of “suspiciously cheap” large/quality houses.
+
+---
+
+### 6. Feature hypotheses
+
+Based on the error analysis above, I formulated several **feature engineering hypotheses** (to be tested later):
+
+1. **Neighborhood “price level” features**
+
+   * Observation: some high-error cases are in neighborhoods that are typically considered more expensive (`NoRidge`, `Somerst`, `Veenker`, `Crawfor`, etc.), where the model underestimates the price.
+   * Hypothesis: the model does not explicitly know the **price class** of a neighborhood.
+   * Potential features:
+
+     * `neighborhood_price_rank`: numeric rank of each neighborhood based on median/mean SalePrice (e.g. 1 = cheap, 2 = mid, 3 = expensive).
+     * `is_premium_neighborhood`: binary flag for neighborhoods in a top-N group by median SalePrice.
+   * Expected effect: better handling of premium areas → reduced underestimation of expensive houses and reduced overestimation of cheap houses in high-end locations.
+
+2. **Interaction between size and quality**
+
+   * Observation: top errors include:
+
+     * cheap but **large and high-quality** houses (overestimated),
+     * expensive houses that are not extreme in either size or quality (underestimated).
+   * Hypothesis: the price impact of living area depends on overall quality (and vice versa); very large + high quality houses form a special “premium” segment which is not well captured by simple additive effects.
+   * Potential features:
+
+     * Interaction feature `GrLivArea * OverallQual`.
+     * Binary flag `is_big_and_high_quality` (e.g. living area above some percentile AND OverallQual ≥ 7).
+   * Expected effect: allow the model to better differentiate the “big & high-quality” segment and adjust predictions accordingly.
+
+3. **Age / year-built grouping**
+
+   * Observation: some top-error houses are very old but expensive (e.g. `Crawfor` 1915, `BrkSide` 1939), while others in newer neighborhoods also behave unusually.
+   * Hypothesis: the model does not sufficiently distinguish age groups (old vs mid vs new stock), especially in combination with neighborhood.
+   * Potential features:
+
+     * `house_age` = (year_of_sale − `YearBuilt`).
+     * Categorical `age_group` (e.g. old / mid / new) based on `YearBuilt`.
+   * Goal: enable different pricing behavior for old houses in cheap vs premium neighborhoods.
