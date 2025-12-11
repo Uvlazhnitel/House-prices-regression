@@ -456,7 +456,7 @@ I concatenated `X_train` with error metrics to obtain `analysis_df`, then sorted
 
 ---
 
-### 6. Feature hypotheses
+### 6. Initial feature hypotheses
 
 Based on the error analysis above, I formulated several **feature engineering hypotheses** (to be tested later):
 
@@ -493,7 +493,7 @@ Based on the error analysis above, I formulated several **feature engineering hy
      * Categorical `age_group` (e.g. old / mid / new) based on `YearBuilt`.
    * Goal: enable different pricing behavior for old houses in cheap vs premium neighborhoods.
 
-## Feature engineering hypotheses
+## Feature engineering experiments and results
 
 This session focused on error analysis and testing supervised feature engineering ideas on top of the current best model (tuned `HistGradientBoostingRegressor` with log-target setup).
 
