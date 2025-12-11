@@ -492,3 +492,100 @@ Based on the error analysis above, I formulated several **feature engineering hy
      * `house_age` = (year_of_sale − `YearBuilt`).
      * Categorical `age_group` (e.g. old / mid / new) based on `YearBuilt`.
    * Goal: enable different pricing behavior for old houses in cheap vs premium neighborhoods.
+
+## Feature engineering hypotheses
+
+This session focused on error analysis and testing supervised feature engineering ideas on top of the current best model (tuned `HistGradientBoostingRegressor` with log-target setup).
+
+Baseline CV performance (5-fold, RMSE on original target scale):
+
+- **Baseline HGB model (no extra supervised features):**  
+  `RMSE = 27,743.10 ± 4,616.72`
+
+Below are the two main hypotheses I tested and their results.
+
+---
+
+### Hypothesis 1 — Neighborhood “price level” features
+
+**Idea**
+
+From the error analysis, several large errors occurred in neighborhoods that are typically perceived as more expensive (e.g. `NoRidge`, `Somerst`, `Veenker`, `Crawfor`, etc.). The intuition is that the model may not explicitly understand the **price level** of each neighborhood and thus:
+
+- underestimates some expensive houses in premium areas,
+- overestimates some relatively cheap houses that “look good” structurally but are located in less desirable areas.
+
+To address this, I implemented a supervised transformer `NeighborhoodPriceLevelAdder` that:
+
+- computes the **median SalePrice per Neighborhood** on the training fold,
+- bins neighborhoods into `n_bins = 3` groups using `qcut`:
+  - 0 = cheaper neighborhoods,
+  - 1 = mid-range,
+  - 2 = most expensive,
+- adds two new features:
+  - `neighborhood_price_rank` (0, 1, 2),
+  - `is_premium_neighborhood` (1 if in the highest-price bin, else 0).
+
+These features were appended to the numeric columns and passed through the standard numeric preprocessing (median imputation + scaling) together with the tuned HGB model.
+
+**CV comparison (5-fold, RMSE):**
+
+- Baseline HGB:  
+  `RMSE = 27,743.10 ± 4,616.72`
+- HGB + `neighborhood_price_rank` + `is_premium_neighborhood`:  
+  `RMSE = 27,924.55 ± 4,765.20`
+
+The mean RMSE slightly increased by ~181, which is very small relative to the fold-to-fold standard deviation (~4.7k). There is no consistent or meaningful improvement.
+
+**Conclusion**
+
+The neighborhood price-level features **do not improve** the model in this form. The current model already encodes `Neighborhood` via categorical encoding, and the coarse 3-bin aggregation does not add useful signal.  
+**Hypothesis 1 is not supported**, and I keep the baseline HGB model (without these extra features) as the main version.
+
+---
+
+### Hypothesis 2 — Size–quality interaction features
+
+**Idea**
+
+From the top-error cases:
+
+- some **cheap houses** are **large and high-quality** (big `GrLivArea`, high `OverallQual`) but sold relatively cheaply → the model overestimates them;
+- some **expensive houses** are not extreme in either size or quality but still very expensive → the model underestimates them.
+
+This suggests that the interaction between **size and quality** might be important:  
+“big + high quality” houses may behave like a separate premium segment.
+
+To capture this, I implemented a transformer `SizeQualityInteractionAdder` that adds:
+
+- `area_quality_interaction = GrLivArea * OverallQual`,
+- `is_big_high_quality`:
+  - computes a `big_area_threshold` as the 80th percentile of `GrLivArea` on the training fold,
+  - sets `is_big_high_quality = 1` if `GrLivArea >= big_area_threshold` **and** `OverallQual ≥ 7`, else 0.
+
+Again, these features were appended to the numeric columns and passed through the same preprocessing and tuned HGB model.
+
+**CV comparison (5-fold, RMSE):**
+
+- Baseline HGB:  
+  `RMSE = 27,743.10 ± 4,616.72`
+- HGB + `area_quality_interaction` + `is_big_high_quality`:  
+  `RMSE = 28,994.69 ± 5,107.70`
+
+The mean RMSE increased by ~1,250, and the standard deviation also grew. This is a clear degradation, not explainable by random CV noise.
+
+**Conclusion**
+
+The size–quality interaction features **hurt** performance in this setup.  
+The `HistGradientBoostingRegressor` already captures nonlinear interactions between `GrLivArea` and `OverallQual` via tree splits, so manually adding these interaction features is redundant or noisy for this model.  
+**Hypothesis 2 is rejected**, and the baseline HGB model without these additional features remains the preferred version.
+
+---
+
+### Overall conclusion
+
+- I performed a detailed error analysis (residual distribution, residuals vs predictions, top-N error cases) and formulated multiple hypotheses about neighborhood and size–quality effects.
+- I implemented and tested two concrete feature-engineering hypotheses inside a proper `Pipeline` with cross-validation.
+- Neither hypothesis led to a consistent improvement in CV RMSE; in fact, Hypothesis 2 significantly worsened performance.
+
+Therefore, I keep the **baseline tuned HGB model without these extra supervised features** as the final candidate model for this project, and I treat these experiments as documented negative results in the feature engineering phase.
