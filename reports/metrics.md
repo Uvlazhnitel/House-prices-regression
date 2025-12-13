@@ -589,3 +589,30 @@ The `HistGradientBoostingRegressor` already captures nonlinear interactions betw
 - Neither hypothesis led to a consistent improvement in CV RMSE; in fact, Hypothesis 2 significantly worsened performance.
 
 Therefore, I keep the **baseline tuned HGB model without these extra supervised features** as the final candidate model for this project, and I treat these experiments as documented negative results in the feature engineering phase.
+## Train run: HGB_tuned
+- UTC time: 2025-12-13T13:47:00Z
+- Target: `SalePrice` (transform: `log1p`)
+- CV: KFold(n_splits=5, shuffle=True, random_state=42)
+- Main metric: **rmse** = 27737.518431 ± 4621.740442
+- Secondary metric: **mae** = 17100.219495 ± 1384.889558
+- Saved model: `models/model.joblib`
+- Saved meta: `models/model_meta.json`
+
+## Train run: HGB_tuned
+- UTC time: 2025-12-13T13:48:23Z
+- Target: `SalePrice` (transform: `log1p`)
+- CV: KFold(n_splits=5, shuffle=True, random_state=42)
+- Main metric: **rmse** = 27737.518431 ± 4621.740442
+- Secondary metric: **mae** = 17100.219495 ± 1384.889558
+- Saved model: `models/model.joblib`
+- Saved meta: `models/model_meta.json`
+
+## Train run: HGB_tuned
+- UTC time: 2025-12-13T13:55:02Z
+- Target: `SalePrice` (transform: `log1p`)
+- CV: KFold(n_splits=5, shuffle=True, random_state=42)
+- Main metric: **rmse** = 27737.518431 ± 4621.740442
+- Secondary metric: **mae** = 17100.219495 ± 1384.889558
+- Saved model: `models/model.joblib`
+- Saved meta: `models/model_meta.json`
+
