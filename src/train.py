@@ -4,7 +4,7 @@ import argparse
 import json
 import platform
 from dataclasses import asdict
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
 
@@ -95,7 +95,7 @@ def collect_env_metadata() -> Dict[str, Any]:
     """Collect lightweight metadata for reproducibility."""
     import sklearn  # local import for version
     meta = {
-        "timestamp_utc": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+        "timestamp_utc": datetime.now(timezone.utc).replace(tzinfo=None).isoformat(timespec="seconds") + "Z",
         "python_version": platform.python_version(),
         "platform": platform.platform(),
         "numpy_version": np.__version__,
@@ -167,7 +167,7 @@ def main() -> None:
     )
 
     # 5) Save / update metrics table
-    metrics_df = upsert_metrics_table(args.metrics_table, summary)
+    upsert_metrics_table(args.metrics_table, summary)
 
     # 6) Optional: OOF predictions + residual plots + top errors
     if args.save_oof:
@@ -242,16 +242,26 @@ def main() -> None:
     meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
 
     # 9) Append short log to metrics.md
-    log_text = (
-        f"## Train run: {args.model_name}\n"
-        f"- UTC time: {meta['timestamp_utc']}\n"
-        f"- Target: `{args.target_col}` (transform: `{args.target_transform}`)\n"
-        f"- CV: KFold(n_splits={args.cv_splits}, shuffle=True, random_state={args.random_state})\n"
-        f"- Main metric: **{summary.main_metric}** = {summary.main_mean:.6f} ± {summary.main_std:.6f}\n"
-        f"- Secondary metric: **{summary.secondary_metric}** = {summary.secondary_mean:.6f} ± {summary.secondary_std:.6f}\n"
-        f"- Saved model: `{model_out_path}`\n"
-        f"- Saved meta: `{meta_path}`\n"
-    )
+    log_lines = [
+        f"## Train run: {args.model_name}",
+        f"- UTC time: {meta['timestamp_utc']}",
+        f"- Target: `{args.target_col}` (transform: `{args.target_transform}`)",
+        f"- CV: KFold(n_splits={args.cv_splits}, shuffle=True, random_state={args.random_state})",
+        f"- Main metric: **{summary.main_metric}** = {summary.main_mean:.6f} ± {summary.main_std:.6f}",
+    ]
+    if (
+        summary.secondary_metric is not None
+        and summary.secondary_mean is not None
+        and summary.secondary_std is not None
+    ):
+        log_lines.append(
+            f"- Secondary metric: **{summary.secondary_metric}** = {summary.secondary_mean:.6f} ± {summary.secondary_std:.6f}"
+        )
+    log_lines.extend([
+        f"- Saved model: `{model_out_path}`",
+        f"- Saved meta: `{meta_path}`",
+    ])
+    log_text = "\n".join(log_lines)
     append_metrics_md(args.metrics_md, log_text)
 
     print("Done.")

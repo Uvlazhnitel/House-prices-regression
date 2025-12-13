@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List, Literal, Optional, Sequence, Tuple, Union
+from typing import Dict, Literal, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -205,8 +205,11 @@ def upsert_metrics_table(
     else:
         df = pd.DataFrame([row])
 
-    # Sort for readability
-    df = df.sort_values(by=["main_mean", "model"], ascending=[True, True]).reset_index(drop=True)
+    # Sort for readability: ascending for error metrics, descending for R2
+    ascending = True
+    if summary.main_metric == "r2":
+        ascending = False
+    df = df.sort_values(by=["main_mean", "model"], ascending=[ascending, True]).reset_index(drop=True)
     df.to_csv(table_path, index=False)
     return df
 
@@ -248,7 +251,7 @@ def save_residual_plots(
     scatter_path = out_dir / f"{prefix}_pred_vs_resid.png"
     plt.figure()
     plt.scatter(y_pred_arr, residuals, s=10, alpha=0.6)
-    plt.axhline(0.0, linewidth=1.0)
+    plt.axhline(0.0, color='red', linewidth=1.0)
     plt.title("Predicted value vs residual")
     plt.xlabel("y_pred")
     plt.ylabel("residual = y_true - y_pred")

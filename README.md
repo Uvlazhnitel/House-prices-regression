@@ -72,7 +72,6 @@ This repository contains an end-to-end **tabular regression** project built with
 │   ├── model.py         # model definition (HGB + optional log1p target)
 │   ├── predict.py       # inference script (CSV/Parquet -> predictions CSV)
 │   └── train.py         # main training entrypoint
-└── tests
 ```
 
 Key components:
