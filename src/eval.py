@@ -1,3 +1,4 @@
+# src/eval.py
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -326,3 +327,42 @@ def save_learning_curve_plot(
 
     if train_sizes is None:
         train_sizes = [0.1, 0.2, 0.4, 0.6, 0.8, 1.0]
+
+    scoring = get_sklearn_scoring(scoring_metric)
+
+    sizes, train_scores, val_scores = learning_curve(
+        estimator,
+        X,
+        y,
+        cv=cv,
+        scoring=scoring,
+        train_sizes=train_sizes,
+        n_jobs=n_jobs,
+        shuffle=True,
+        random_state=42,
+    )
+
+    # Convert to positive errors if needed
+    train_scores = _to_positive_metric(scoring_metric, train_scores)
+    val_scores = _to_positive_metric(scoring_metric, val_scores)
+
+    train_mean = np.mean(train_scores, axis=1)
+    train_std = np.std(train_scores, axis=1)
+    val_mean = np.mean(val_scores, axis=1)
+    val_std = np.std(val_scores, axis=1)
+
+    plt.figure()
+    plt.plot(sizes, train_mean, marker="o", label="Train")
+    plt.plot(sizes, val_mean, marker="o", label="Validation")
+    plt.fill_between(sizes, train_mean - train_std, train_mean + train_std, alpha=0.2)
+    plt.fill_between(sizes, val_mean - val_std, val_mean + val_std, alpha=0.2)
+    plt.title("Learning curve")
+    plt.xlabel("Training set size")
+    ylabel = f"{scoring_metric.upper()} (lower is better)" if scoring_metric in ("rmse", "mae") else "R2 (higher is better)"
+    plt.ylabel(ylabel)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(out_path)
+    plt.close()
+
+    return out_path
