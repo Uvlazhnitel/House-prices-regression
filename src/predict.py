@@ -2,11 +2,15 @@
 from __future__ import annotations
 
 import argparse
+import logging
 from pathlib import Path
 from typing import Optional, Union
 
 import pandas as pd
 from joblib import load
+
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 
 def parse_args() -> argparse.Namespace:
@@ -90,6 +94,8 @@ def main() -> None:
     id_series: Optional[pd.Series] = df[args.id_col] if args.id_col in df.columns else None
 
     # Drop target if present (avoid leakage and shape mismatch)
+    if args.target_col in df.columns:
+        logging.info(f"Target column '{args.target_col}' found in input data and will be dropped to avoid leakage.")
     X = df.drop(columns=[args.target_col], errors="ignore")
 
     # Predict
@@ -98,7 +104,7 @@ def main() -> None:
     # Build output dataframe
     out_df = pd.DataFrame({args.pred_col: preds})
     if id_series is not None:
-        out_df.insert(0, args.id_col, id_series.values)
+        out_df.insert(0, args.id_col, id_series.reset_index(drop=True))
 
     # Determine output path
     if args.output_path is None:
