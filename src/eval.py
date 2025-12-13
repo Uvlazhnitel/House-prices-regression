@@ -207,7 +207,7 @@ def upsert_metrics_table(
 
     # Sort for readability: ascending for error metrics, descending for R2
     ascending = True
-    if summary.main_metric.lower() == "r2":
+    if summary.main_metric == "r2":
         ascending = False
     df = df.sort_values(by=["main_mean", "model"], ascending=[ascending, True]).reset_index(drop=True)
     df.to_csv(table_path, index=False)
