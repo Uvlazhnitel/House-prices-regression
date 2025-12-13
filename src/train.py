@@ -95,7 +95,7 @@ def collect_env_metadata() -> Dict[str, Any]:
     """Collect lightweight metadata for reproducibility."""
     import sklearn  # local import for version
     meta = {
-        "timestamp_utc": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+        "timestamp_utc": datetime.now(timezone.utc).replace(tzinfo=None).isoformat(timespec="seconds") + "Z",
         "python_version": platform.python_version(),
         "platform": platform.platform(),
         "numpy_version": np.__version__,

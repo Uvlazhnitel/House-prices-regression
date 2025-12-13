@@ -132,21 +132,23 @@ def validate_splits(
             if not allow_partial:
                 raise ValueError("Train indices are empty, but allow_partial is False.")
         else:
-            out_of_range_train = train_idx[(train_idx < 0) | (train_idx >= n)]
-            if out_of_range_train.size > 0:
+            train_out_of_range = (train_idx < 0) | (train_idx >= n)
+            if train_out_of_range.any():
+                out_of_range_values = train_idx[train_out_of_range]
                 raise ValueError(
                     f"Train indices out of range for df.iloc. "
-                    f"Out-of-range values (up to 10 shown): {out_of_range_train[:10].tolist()}"
+                    f"Out-of-range values (up to 10 shown): {out_of_range_values[:10].tolist()}"
                 )
         if test_idx.size == 0:
             if not allow_partial:
                 raise ValueError("Test indices are empty, but allow_partial is False.")
         else:
-            out_of_range_test = test_idx[(test_idx < 0) | (test_idx >= n)]
-            if out_of_range_test.size > 0:
+            test_out_of_range = (test_idx < 0) | (test_idx >= n)
+            if test_out_of_range.any():
+                out_of_range_values = test_idx[test_out_of_range]
                 raise ValueError(
                     f"Test indices out of range for df.iloc. "
-                    f"Out-of-range values (up to 10 shown): {out_of_range_test[:10].tolist()}"
+                    f"Out-of-range values (up to 10 shown): {out_of_range_values[:10].tolist()}"
                 )
 
         used = train_idx.size + test_idx.size
