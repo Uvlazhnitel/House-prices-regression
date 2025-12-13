@@ -1,0 +1,2 @@
+model,main_metric,main_mean,main_std,secondary_metric,secondary_mean,secondary_std,n_splits
+HGB_tuned,rmse,27737.51843074558,4621.740441674436,mae,17100.21949540446,1384.8895582534785,5
