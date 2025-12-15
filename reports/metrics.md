@@ -616,3 +616,36 @@ Therefore, I keep the **baseline tuned HGB model without these extra supervised 
 - Saved model: `models/model.joblib`
 - Saved meta: `models/model_meta.json`
 
+---
+
+## Final test evaluation
+
+**Final model:** `HGB_tuned` (HistGradientBoostingRegressor, tuned)  
+**Target transform:** `log1p(SalePrice)` (metrics evaluated in original price scale)  
+**CV:** 5-fold KFold (shuffle=True, random_state=42)  
+**Main metric:** RMSE, **secondary:** MAE
+
+### Cross-validation (train, 5-fold)
+(loaded from `reports/metrics_models.csv`, row = `HGB_tuned`)
+
+- RMSE (mean ± std): **28,566.11 ± 4,796.25**
+- MAE  (mean ± std): **17,169.07 ± 1,310.56**
+
+### Test set (final, one-time evaluation)
+- RMSE: **26,344.88**
+- MAE: **16,246.56**
+- R²: **0.9095**
+
+### Interpretation
+- Test metrics are **better than the CV mean** and fall within typical CV variability → **no clear sign of overfitting**.
+- The model generalizes well on the held-out test split.
+
+### Artifacts
+- Model: `models/model.joblib`
+- Meta: `models/model_meta.json`
+- Test report: `reports/test_metrics.md`
+- Figures:
+  - `reports/figures/test_y_true_vs_y_pred.png`
+  - `reports/figures/test_residuals_hist.png`
+  - `reports/figures/test_residuals_pred_vs_resid.png`
+- Top errors: `reports/test_top_errors.csv`
