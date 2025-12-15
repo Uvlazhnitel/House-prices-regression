@@ -1,15 +1,14 @@
-# P2 — House Prices Regression (Scikit-Learn)
+# House Prices Regression (Scikit-Learn)
 
-This repository contains an end-to-end **tabular regression** project built with **scikit-learn**.
+End-to-end tabular regression project for predicting house prices with a **reproducible, protocol-driven** workflow using scikit-learn.
 
-**Goal:** Train a reproducible model for predicting house prices using a strict ML protocol:
+The project demonstrates:
 
-- Fixed train/test split (saved indices)
+- Fixed train/test split with **saved indices**
 - All preprocessing inside a `Pipeline` / `ColumnTransformer`
-- Cross-validation for model selection
-- Saved model artifacts for inference
-
-> In this repo, the training script focuses on **cross-validation (CV) evaluation on the training split** and saving artifacts.
+- **Cross-validation** for model selection and diagnostics
+- **Saved model artifacts** for inference
+- **One-time** final evaluation on the held-out test set (Session 30)
 
 ---
 
@@ -19,9 +18,6 @@ This repository contains an end-to-end **tabular regression** project built with
 .
 ├── README.md
 ├── data
-│   ├── external
-│   ├── interim
-│   ├── processed
 │   ├── raw
 │   │   └── house_prices_train.csv
 │   └── splits
@@ -40,47 +36,41 @@ This repository contains an end-to-end **tabular regression** project built with
 │   ├── 07_leader_hyperparam_search.ipynb
 │   ├── 08_learning_curve.ipynb
 │   ├── 09_interpretation_pdp.ipynb
-│   └── 10_error_analysis_and_features.ipynb
+│   ├── 10_error_analysis_and_features.ipynb
+│   └── 11_final_test_evaluation.ipynb
 ├── reports
-│   ├── cv_results_leader.csv
-│   ├── error_analysis_df.csv
-│   ├── error_analysis_with_features.csv
-│   ├── figures
-│   │   ├── HGB_tuned_oof_hist.png
-│   │   ├── HGB_tuned_oof_pred_vs_resid.png
-│   │   ├── lasso_alpha_curve.png
-│   │   ├── learning_curve.png
-│   │   ├── pdp_GarageCars.png
-│   │   ├── pdp_GrLivArea.png
-│   │   ├── pdp_OverallQual.png
-│   │   └── ridge_alpha_curve.png
-│   ├── hgb_permutation_importances.csv
-│   ├── lasso_alpha_search.csv
 │   ├── metrics.md
-│   ├── metrics_baseline.csv
 │   ├── metrics_models.csv
-│   ├── rf_feature_importances.csv
-│   ├── ridge_alpha_search.csv
-│   └── top_errors.csv
-├── requirements.txt
+│   ├── cv_results_leader.csv
+│   ├── test_metrics.md
+│   ├── test_top_errors.csv
+│   └── figures
+│       ├── learning_curve.png
+│       ├── pdp_OverallQual.png
+│       ├── pdp_GrLivArea.png
+│       ├── pdp_GarageCars.png
+│       ├── test_y_true_vs_y_pred.png
+│       ├── test_residuals_hist.png
+│       └── test_residuals_pred_vs_resid.png
 ├── src
 │   ├── data.py          # load dataset + split indices
 │   ├── eval.py          # CV evaluation + plots/tables
 │   ├── features.py      # feature groups + ColumnTransformer
-│   ├── house_prices
-│   │   └── __init__.py
 │   ├── model.py         # model definition (HGB + optional log1p target)
 │   ├── predict.py       # inference script (CSV/Parquet -> predictions CSV)
 │   └── train.py         # main training entrypoint
+└── requirements.txt
 ```
 
 Key components:
 
-- `data/` — datasets and fixed train/test split indices
-- `models/` — saved model and metadata
-- `notebooks/` — EDA, baseline models, hyperparameter search, interpretation, and error analysis
-- `reports/` — metrics, CV results, error analysis tables, and figures
-- `src/` — all code for data loading, features, training, evaluation, and prediction
+- `data/` — dataset + fixed train/test split indices  
+- `models/` — saved model and metadata  
+- `notebooks/` — EDA, baselines, tuning, interpretation, error analysis, and final test evaluation  
+- `reports/` — metrics, CV results, test report, and figures  
+- `src/` — all core code for loading, preprocessing, training, evaluation, and prediction  
+
+> Note: If you see an extra folder `repor/` at the repository root, it is not used by the project and can be safely removed.
 
 ---
 
@@ -95,8 +85,6 @@ source .venv/bin/activate  # on Windows: .venv\Scripts\activate
 
 ### 2. Install dependencies
 
-Using `requirements.txt`:
-
 ```bash
 pip install --upgrade pip
 pip install -r requirements.txt
@@ -106,31 +94,31 @@ pip install -r requirements.txt
 
 ## Data
 
-Place the training dataset here:
+Place the main dataset at:
 
 ```text
 data/raw/house_prices_train.csv
 ```
 
-This project expects the target column to be:
+Expected target column:
 
 ```text
 SalePrice
 ```
 
-The fixed split indices must be present at:
+Fixed split indices (precomputed) must be present at:
 
 ```text
 data/splits/train_indices.npy
 data/splits/test_indices.npy
 ```
 
-The training script **never creates splits automatically**.  
-It uses the **pre-saved indices** to keep evaluation reproducible.
+The training script **never** creates splits automatically.  
+It **always** uses pre-saved indices to ensure fully reproducible evaluation.
 
 ---
 
-## Reproduce training (CV + saving artifacts)
+## Training and cross-validation
 
 From the repository root, run:
 
@@ -147,77 +135,113 @@ python -m src.train \
 
 ### What this command does
 
-1. **Loads the dataset** from `data/raw/`.
-2. **Loads the fixed train/test split indices** from `data/splits/`.
-3. **Builds a preprocessing `ColumnTransformer`:**
-   - Numeric: median imputation + standard scaling
-   - Categorical: most-frequent imputation + `OrdinalEncoder` (unknown → `-1`)
-4. **Builds the model:**
-   - `HistGradientBoostingRegressor` inside a `Pipeline`
-   - Optionally wraps it with `TransformedTargetRegressor(log1p/expm1)` when `--target-transform log1p`
-5. **Runs K-fold cross-validation** on the training split and writes metrics to `reports/`.
-6. **Fits the final model** on the full training split and saves artifacts into `models/`.
+1. **Loads data**
+   - Reads the dataset from `data/raw/house_prices_train.csv`.
+   - Loads fixed split indices from `data/splits/`.
 
-This run evaluates **CV performance on training data**.  
-**Final test evaluation** is performed separately (Session 30).
+2. **Builds preprocessing (`ColumnTransformer`)**
+   - Numeric features: median imputation + standard scaling  
+   - Categorical features: imputation + encoder  
+   - Exact configuration is implemented in `src/features.py`.
+
+3. **Builds the model**
+   - `HistGradientBoostingRegressor` inside an end-to-end `Pipeline`.
+   - Optional `TransformedTargetRegressor(log1p/expm1)` when `--target-transform log1p`.
+
+4. **Runs cross-validation**
+   - K-fold CV on the **training split only**.
+   - Writes CV metrics and diagnostics to `reports/`.
+
+5. **Fits final model and saves artifacts**
+   - Trains the final model on the full **training split**.
+   - Saves artifacts under `models/`.
+
+This run evaluates **CV performance on training data** and produces a **reusable trained model artifact**.
 
 ---
 
-## Outputs (artifacts and reports)
+## Final test evaluation (Session 30)
 
-After a successful run you will get:
+**Protocol rule:**  
+The test split is evaluated **exactly once**, after all modeling choices are fixed (hyperparameters, target transform, feature set, etc.).
+
+Final test evaluation artifacts are stored in:
+
+- `reports/test_metrics.md`
+- `reports/figures/test_y_true_vs_y_pred.png`
+- `reports/figures/test_residuals_hist.png`
+- `reports/figures/test_residuals_pred_vs_resid.png`
+- `reports/test_top_errors.csv`
+
+The corresponding notebook is:
+
+- `notebooks/11_final_test_evaluation.ipynb`
+
+---
+
+## Final model results
+
+**Final model:**  
+`HGB_tuned` — tuned `HistGradientBoostingRegressor` with `log1p` target transform.
+
+**Cross-validation (5-fold, train split):**
+
+- RMSE (mean ± std): **28,566 ± 4,796**
+- MAE (mean ± std): **17,169 ± 1,311**
+
+**Test (held-out split, one-time):**
+
+- RMSE: **26,345**
+- MAE: **16,247**
+- R²: **0.9095**
+
+**Interpretation**
+
+- Test performance is slightly **better** than the CV mean.
+- Test metrics lie **within normal CV variability**.
+- No clear sign of overfitting to the training data.
+
+---
+
+## Artifacts and reports
 
 ### Model artifacts
 
 - `models/model.joblib`  
-  The trained model saved with `joblib`.  
-  This includes **preprocessing + model** (end-to-end object).
+  - Trained end-to-end model saved with `joblib`.  
+  - Includes **preprocessing + model** in a single object.
 
 - `models/model_meta.json`  
-  Metadata for reproducibility:
-  - Data paths, target name  
-  - Feature groups (numeric/categorical column lists)  
-  - Model hyperparameters  
-  - CV metrics summary  
-  - Library versions, timestamp, `random_state`
+  Contains metadata for full reproducibility, including:
+
+  - Dataset paths and target column
+  - Split information (train/test indices paths or parameters)
+  - Feature groups / preprocessing configuration
+  - Model hyperparameters
+  - CV metrics summary
+  - Timestamp, library versions, `random_state`
 
 ### Reports
 
 - `reports/metrics_models.csv`  
-  Table with CV metrics for the model name you pass via `--model-name`.
+  - CV metrics summary table (one row per `--model-name`).
 
 - `reports/metrics.md`  
-  A human-readable log appended after each training run.
+  - Human-readable log of experiments and conclusions.
 
-Additional CSVs and plots in `reports/` come from experiments in the notebooks, such as:
+Other files in `reports/` (e.g. `cv_results_leader.csv`, figures) are produced during:
 
-- Baseline metrics
-- Alpha searches for Ridge/Lasso
-- Random forest and HGB feature/permutation importances
-- Error analysis tables
-
-### Optional (if you use flags)
-
-If you pass `--save-oof`:
-
-- `reports/figures/<MODEL>_oof_hist.png`  
-- `reports/figures/<MODEL>_oof_pred_vs_resid.png`  
-  - Residual analysis plots using OOF predictions
-
-- `reports/top_errors.csv`  
-  - Top absolute errors table
-
-If you pass `--save-learning-curve`:
-
-- `reports/figures/learning_curve.png`  
-  - Learning curve plot
+- Baseline models
+- Alpha searches (Ridge/Lasso)
+- Hyperparameter tuning
+- Interpretation (PDPs)
+- Error analysis
 
 ---
 
 ## Inference
 
-Once you have `models/model.joblib`, you can generate predictions on any dataset  
-(with the **same feature columns** as training).
+Once `models/model.joblib` has been created, you can generate predictions on any dataset that has the **same feature columns** as the training data.
 
 Example:
 
@@ -229,13 +253,11 @@ python -m src.predict \
   --pred-col SalePrice
 ```
 
-This will save a CSV of predictions to the given `--output-path`.
+This will:
+
+- Load the saved pipeline from `models/model.joblib`.
+- Apply the **same preprocessing** used in training.
+- Produce predictions for `SalePrice`.
+- Save them to `predictions/preds_on_train.csv`.
 
 ---
-
-## Reproducibility notes
-
-- No preprocessing is done **before** splitting.
-- All preprocessing happens inside `Pipeline` / `ColumnTransformer`.
-- The split is fixed by saved indices in `data/splits/`.
-- Randomness is controlled via `--random-state` (propagated through training and evaluation).
