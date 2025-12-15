@@ -1,0 +1,29 @@
+# Metrics log
+
+## Train run: HGB_tuned
+- UTC time: 2025-12-15T15:20:08Z
+- Target: `SalePrice` (transform: `raw`)
+- CV: KFold(n_splits=5, shuffle=True, random_state=42)
+- Main metric: **rmse** = 28566.109638 ± 4796.254568
+- Secondary metric: **mae** = 17169.066736 ± 1310.557653
+- Saved model: `models/model.joblib`
+- Saved meta: `models/model_meta.json`
+
+## Train run: HGB_tuned
+- UTC time: 2025-12-15T15:22:23Z
+- Target: `SalePrice` (transform: `raw`)
+- CV: KFold(n_splits=5, shuffle=True, random_state=42)
+- Main metric: **rmse** = 28566.109638 ± 4796.254568
+- Secondary metric: **mae** = 17169.066736 ± 1310.557653
+- Saved model: `models/model.joblib`
+- Saved meta: `models/model_meta.json`
+
+## Train run: HGB_tuned
+- UTC time: 2025-12-15T15:26:28Z
+- Target: `SalePrice` (transform: `raw`)
+- CV: KFold(n_splits=5, shuffle=True, random_state=42)
+- Main metric: **rmse** = 28566.109638 ± 4796.254568
+- Secondary metric: **mae** = 17169.066736 ± 1310.557653
+- Saved model: `models/model.joblib`
+- Saved meta: `models/model_meta.json`
+
