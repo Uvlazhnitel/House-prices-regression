@@ -1,7 +1,7 @@
 # Test metrics
 
 **Target:** `SalePrice`  
-**Model artifact:** `/Users/uvlazhnitel/Documents/coding/DataScience/p2-house-price/models/model.joblib`
+**Model artifact:** `models/model.joblib`
 
 ## Metrics (test)
 - RMSE: **26344.8763**
@@ -9,12 +9,12 @@
 - R2: **0.9095**
 
 ## Figures
-- y_true vs y_pred: `/Users/uvlazhnitel/Documents/coding/DataScience/p2-house-price/reports/figures/test_y_true_vs_y_pred.png`
-- residual histogram: `/Users/uvlazhnitel/Documents/coding/DataScience/p2-house-price/reports/figures/test_residuals_hist.png`
-- y_pred vs residual: `/Users/uvlazhnitel/Documents/coding/DataScience/p2-house-price/reports/figures/test_residuals_pred_vs_resid.png`
+- y_true vs y_pred: `reports/figures/test_y_true_vs_y_pred.png`
+- residual histogram: `reports/figures/test_residuals_hist.png`
+- y_pred vs residual: `reports/figures/test_residuals_pred_vs_resid.png`
 
 ## Tables
-- top errors: `/Users/uvlazhnitel/Documents/coding/DataScience/p2-house-price/reports/test_top_errors.csv`
+- top errors: `reports/test_top_errors.csv`
 
 ### Model meta
 ```json
